@@ -966,6 +966,9 @@ export default {
         this.connectToServer(this.lastServerConnectionConfig)
       } else {
         this.showForm = !this.serverConnectionConfigs.length
+        if (this.showForm && !this.serverConfig.address && this.$config.defaultServerUrl) {
+          this.serverConfig.address = this.validateServerUrl(this.$config.defaultServerUrl)
+        }
       }
     }
   },

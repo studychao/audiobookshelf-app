@@ -11,7 +11,8 @@ export default {
   },
 
   publicRuntimeConfig: {
-    version: pkg.version
+    version: pkg.version,
+    defaultServerUrl: process.env.ABS_DEFAULT_SERVER_URL || ''
   },
 
   head: {

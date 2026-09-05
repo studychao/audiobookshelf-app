@@ -1,5 +1,5 @@
 {
-	"appId": "com.audiobookshelf.app",
+	"appId": "com.chaowu.audiobookshelf",
 	"appName": "audiobookshelf-app",
 	"webDir": "dist",
 	"plugins": {
