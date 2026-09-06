@@ -12,7 +12,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Override point for customization after application launch.
 
         let configuration = Realm.Configuration(
-            schemaVersion: 20,
+            schemaVersion: 21,
             migrationBlock: { [weak self] migration, oldSchemaVersion in
                 if (oldSchemaVersion < 1) {
                     AbsLogger.info(message: "Realm schema version was \(oldSchemaVersion)")
@@ -105,6 +105,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        if url.isFileURL {
+            do { try PersonalShared.importFile(url); PersonalShared.defaults.set("import", forKey: "pendingAction"); _ = ApplicationDelegateProxy.shared.application(app, open: url, options: options); return true }
+            catch { AbsLogger.error(message: "无法导入文件", error: error); return false }
+        }
+        if url.scheme == "chaoaudiobook" { PersonalShared.defaults.set(url.host == "import" ? "import" : "resume", forKey: "pendingAction") }
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)
@@ -125,4 +130,3 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 
 }
-

@@ -1,5 +1,7 @@
 <template>
   <div class="w-full h-full min-h-full relative">
+    <home-continue-listening />
+    <nuxt-link v-if="$store.state.personal.importCount" to="/import" class="block mx-5 my-3 text-success">有 {{ $store.state.personal.importCount }} 个文件待导入，点此确认书名</nuxt-link>
     <div v-if="attemptingConnection" class="w-full pt-4 flex items-center justify-center">
       <widgets-loading-spinner />
       <p class="pl-4">{{ $strings.MessageAttemptingServerConnection }}</p>
@@ -28,6 +30,7 @@
         </div>
         <div class="flex justify-center">
           <ui-btn v-if="!user" small @click="$router.push('/connect')" class="w-32">{{ $strings.ButtonConnect }}</ui-btn>
+          <ui-btn v-else small @click="$router.push('/import')">添加第一本有声书</ui-btn>
         </div>
       </div>
     </div>

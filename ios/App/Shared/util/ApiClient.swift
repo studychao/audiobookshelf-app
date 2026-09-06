@@ -570,21 +570,13 @@ class ApiClient {
                 $0.serverConnectionConfigId == Store.serverConfig?.id
             }.map { $0.freeze() }
             AbsLogger.info(message: "syncLocalSessionsWithServer: Found \(playbackSessions.count) playback sessions for server (first sync: \(isFirstSync))")
-            if (!playbackSessions.isEmpty) {
-                let success = await ApiClient.reportAllLocalPlaybackSessions(playbackSessions)
-                if (success) {
-                    // Remove sessions from db
-                    try playbackSessions.forEach { session in
-                        AbsLogger.info(message: "syncLocalSessionsWithServer: Handling \(session.displayTitle ?? "") (\(session.id)) \(session.isActiveSession)")
-                        // On first sync then remove all sessions
-                        if (!session.isActiveSession || isFirstSync) {
-                            if let session = session.thaw() {
-                                try session.delete()
-                            }
-                        }
-                    }
+            if isFirstSync {
+                let activeId = PlayerHandler.getPlaybackSession()?.id
+                for saved in playbackSessions where saved.id != activeId {
+                    if let live = saved.thaw() { try live.update { live.isActiveSession = false } }
                 }
             }
+            await PlayerProgress.shared.retryPending()
         } catch {
             debugPrint(error)
             return

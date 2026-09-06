@@ -14,13 +14,19 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
     public var identifier = "AbsDownloaderPlugin"
     public var jsName = "AbsDownloader"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "downloadLibraryItem", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "downloadLibraryItem", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "retryDownloads", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "getDownloads", returnType: CAPPluginReturnPromise)
     ]
     
     static private let downloadsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     
     private lazy var session: URLSession = {
         let config = URLSessionConfiguration.background(withIdentifier: "AbsDownloader")
+        config.waitsForConnectivity = true
+        config.httpMaximumConnectionsPerHost = 3
+        config.timeoutIntervalForRequest = 60
+        config.timeoutIntervalForResource = 7 * 24 * 60 * 60
         let queue = OperationQueue()
         queue.maxConcurrentOperationCount = 5
         return URLSession(configuration: config, delegate: self, delegateQueue: queue)
@@ -34,6 +40,69 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
     private var pendingDownloadTasks: [DownloadItemPartTask] = []
     private var activeDownloadTasks: Set<String> = [] // Track active task IDs
     private let maxConcurrentDownloads = 3
+    private var restoring = false
+    private var finalizing = Set<String>()
+
+    override public func load() {
+        NotificationCenter.default.addObserver(self, selector: #selector(restoreAfterForeground), name: UIApplication.didBecomeActiveNotification, object: nil)
+        restoreDownloads(resetRetries: false)
+    }
+
+    @objc private func restoreAfterForeground() { restoreDownloads(resetRetries: false) }
+
+    @objc func retryDownloads(_ call: CAPPluginCall) {
+        restoreDownloads(resetRetries: true)
+        call.resolve()
+    }
+
+    @objc func getDownloads(_ call: CAPPluginCall) {
+        do {
+            let items = try Realm().objects(DownloadItem.self).filter("serverConnectionConfigId == %@", Store.serverConfig?.id ?? "")
+            call.resolve(["items": try items.map { try $0.asDictionary() }])
+        } catch { call.reject("无法读取下载队列", nil, error) }
+    }
+
+    private func restoreDownloads(resetRetries: Bool) {
+        downloadQueueLock.lock()
+        if restoring { downloadQueueLock.unlock(); return }
+        restoring = true
+        downloadQueueLock.unlock()
+        session.getAllTasks { [weak self] tasks in
+            guard let self else { return }
+            defer { self.downloadQueueLock.lock(); self.restoring = false; self.downloadQueueLock.unlock() }
+            do {
+                let realm = try Realm()
+                var known = Set(tasks.compactMap { $0.taskDescription })
+                self.downloadQueueLock.lock()
+                known.formUnion(self.pendingDownloadTasks.map { $0.partId })
+                self.activeDownloadTasks.formUnion(tasks.filter { $0.state == .running }.compactMap { $0.taskDescription })
+                self.downloadQueueLock.unlock()
+                for item in realm.objects(DownloadItem.self) {
+                    for part in item.downloadItemParts where !part.moved && !known.contains(part.id) {
+                        if part.failed && !resetRetries { continue }
+                        if let configId = item.serverConnectionConfigId, let config = realm.object(ofType: ServerConnectionConfig.self, forPrimaryKey: configId), var url = part.downloadURL.flatMap({ URLComponents(url: $0, resolvingAgainstBaseURL: false) }) {
+                            var query = (url.queryItems ?? []).filter { $0.name != "token" }
+                            query.append(URLQueryItem(name: "token", value: config.token)); url.queryItems = query
+                            if let updated = url.url { try realm.write {
+                                if part.uri != updated.absoluteString { part.resumeData = nil }
+                                part.uri = updated.absoluteString
+                            } }
+                        }
+                        guard let url = part.downloadURL else { continue }
+                        let task = part.resumeData.map { self.session.downloadTask(withResumeData: $0) } ?? self.session.downloadTask(with: url)
+                        task.taskDescription = part.id
+                        try realm.write { part.completed = false; part.failed = false; part.lastError = ""; if resetRetries { part.retryCount = 0 } }
+                        self.downloadQueueLock.lock()
+                        self.pendingDownloadTasks.append(DownloadItemPartTask(part: part.freeze(), task: task, partId: part.id, filename: part.filename ?? "音频"))
+                        self.downloadQueueLock.unlock()
+                    }
+                    if item.didDownloadSuccessfully() { self.handleDownloadTaskCompleteFromDownloadItem(item.freeze()) }
+                }
+                for task in tasks where task.state == .suspended { task.resume() }
+                self.startNextDownloadInQueue()
+            } catch { AbsLogger.error(message: "恢复下载失败", error: error) }
+        }
+    }
     
     
     // MARK: - Download Queue Management
@@ -73,10 +142,10 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                 throw LibraryItemDownloadError.downloadItemPartNotFound
             }
 
-            try realm.write {
-                liveDownloadItemPart.bytesDownloaded = liveDownloadItemPart.fileSize
-                liveDownloadItemPart.progress = 100
-                liveDownloadItemPart.completed = true
+            let actualSize = (try FileManager.default.attributesOfItem(atPath: location.path)[.size] as? NSNumber)?.int64Value ?? 0
+            if let failure = DownloadValidation.failure(statusCode: (downloadTask.response as? HTTPURLResponse)?.statusCode, actualSize: actualSize, expectedSize: Int64(liveDownloadItemPart.fileSize), isCover: liveDownloadItemPart.filename == "cover.jpg") {
+                try realm.write { liveDownloadItemPart.failed = true; liveDownloadItemPart.lastError = failure }
+                return
             }
             
             do {
@@ -88,6 +157,11 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                 try FileManager.default.moveItem(at: location, to: destinationUrl)
                 try realm.write {
                     liveDownloadItemPart.moved = true
+                    liveDownloadItemPart.completed = true
+                    liveDownloadItemPart.failed = false
+                    liveDownloadItemPart.resumeData = nil
+                    liveDownloadItemPart.bytesDownloaded = Double(actualSize)
+                    liveDownloadItemPart.progress = 100
                 }
             } catch {
                 try realm.write {
@@ -100,7 +174,7 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
     
     public func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         handleDownloadTaskUpdate(downloadTask: task) { downloadItem, downloadItemPart in
-            if let error = error {
+            if error != nil || downloadItemPart.failed {
                 let realm = try Realm()
                 let partId = downloadItemPart.id
 
@@ -112,8 +186,15 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                 try realm.write {
                     liveDownloadItemPart.completed = true
                     liveDownloadItemPart.failed = true
+                    liveDownloadItemPart.resumeData = (error as NSError?)?.userInfo[NSURLSessionDownloadTaskResumeData] as? Data
+                    if let error { liveDownloadItemPart.lastError = error.localizedDescription }
                 }
-                throw error
+                let retry = DownloadValidation.shouldRetry(errorCode: (error as NSError?)?.code, statusCode: (task.response as? HTTPURLResponse)?.statusCode, attempt: liveDownloadItemPart.retryCount)
+                if retry {
+                    try realm.write { liveDownloadItemPart.retryCount += 1; liveDownloadItemPart.completed = false; liveDownloadItemPart.failed = false }
+                    let delay = pow(2.0, Double(liveDownloadItemPart.retryCount))
+                    DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in self?.restoreDownloads(resetRetries: false) }
+                }
             }
         }
 
@@ -219,9 +300,6 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
                             self.downloadItemProgress.removeValue(forKey: item.id!)
                         }
                         self.handleDownloadTaskCompleteFromDownloadItem(item)
-                        if let item = Database.shared.getDownloadItem(downloadItemId: item.id!) {
-                            try? item.delete()
-                        }
                     }
                     
                     // Check for items done downloading
@@ -236,51 +314,67 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
     }
     
     private func handleDownloadTaskCompleteFromDownloadItem(_ downloadItem: DownloadItem) {
-        var statusNotification = [String: Any]()
-        statusNotification["libraryItemId"] = downloadItem.id
-        
-        if ( downloadItem.didDownloadSuccessfully() ) {
-            ApiClient.getLibraryItemWithProgress(libraryItemId: downloadItem.libraryItemId!, episodeId: downloadItem.episodeId) { [weak self] libraryItem in
-                guard let libraryItem = libraryItem else { AbsLogger.error(message: "LibraryItem not found"); return }
-                let localDirectory = libraryItem.id
+        guard downloadItem.didDownloadSuccessfully(), let downloadId = downloadItem.id else { return }
+        downloadQueueLock.lock()
+        let started = finalizing.insert(downloadId).inserted
+        downloadQueueLock.unlock()
+        guard started else { return }
+        let finish: (LibraryItem?) -> Void = { [weak self] libraryItem in
+            guard let self else { return }
+            defer { self.downloadQueueLock.lock(); self.finalizing.remove(downloadId); self.downloadQueueLock.unlock() }
+            do {
+                guard let libraryItem else { throw LibraryItemDownloadError.downloadItemNotFound }
+                let realm = try Realm()
+                guard let savedDownload = realm.object(ofType: DownloadItem.self, forPrimaryKey: downloadId),
+                      let configId = downloadItem.serverConnectionConfigId,
+                      let server = realm.object(ofType: ServerConnectionConfig.self, forPrimaryKey: configId) else { return }
                 var coverFile: String?
-                
-                // Assemble the local library item
-                let files = downloadItem.downloadItemParts.enumerated().compactMap { _, part -> LocalFile? in
-                    var mimeType = part.mimeType()
-                    if part.filename == "cover.jpg" {
-                        coverFile = part.destinationUri
-                        mimeType = "image/jpg"
+                let files: [LocalFile] = try downloadItem.downloadItemParts.map { part in
+                    guard let filename = part.filename, let uri = part.destinationUri, let url = part.destinationURL,
+                          FileManager.default.fileExists(atPath: url.path) else { throw LibraryItemDownloadError.downloadItemPartNotFound }
+                    let mime = filename == "cover.jpg" ? "image/jpeg" : (part.mimeType() ?? "application/octet-stream")
+                    if filename == "cover.jpg" { coverFile = uri }
+                    return LocalFile(libraryItem.id, filename, mime, uri, fileSize: Int(url.fileSize))
+                }
+                var localItem = realm.objects(LocalLibraryItem.self).filter("libraryItemId == %@ AND serverConnectionConfigId == %@", libraryItem.id, configId).first
+                var progress: LocalMediaProgress?
+                // The local book, progress and queue removal commit together. A disk/Realm failure retains the queue.
+                try realm.write {
+                    if let existing = localItem, existing.isPodcast {
+                        let names = Set(existing.localFiles.compactMap { $0.filename })
+                        try existing.addFiles(files.filter { !names.contains($0.filename ?? "") }, item: libraryItem)
+                    } else {
+                        localItem = LocalLibraryItem(libraryItem, localUrl: libraryItem.id, server: server, files: files, coverPath: coverFile)
+                        realm.add(localItem!, update: .modified)
                     }
-                    return LocalFile(libraryItem.id, part.filename!, mimeType!, part.destinationUri!, fileSize: Int(part.destinationURL!.fileSize))
-                }
-                var localLibraryItem = Database.shared.getLocalLibraryItem(byServerLibraryItemId: libraryItem.id)
-                if (localLibraryItem != nil && localLibraryItem!.isPodcast) {
-                    try? Realm().write {
-                        try? localLibraryItem?.addFiles(files, item: libraryItem)
+                    if let remote = libraryItem.userMediaProgress, let localItem {
+                        let episode = downloadItem.media?.episodes.first(where: { $0.id == downloadItem.episodeId })
+                        let candidate = LocalMediaProgress(localLibraryItem: localItem, episode: episode, progress: remote)
+                        let current = realm.object(ofType: LocalMediaProgress.self, forPrimaryKey: candidate.id)
+                        if current == nil || current!.lastUpdate < candidate.lastUpdate {
+                            realm.add(candidate, update: .modified)
+                            progress = candidate
+                        } else { progress = current }
                     }
-                } else {
-                    localLibraryItem = LocalLibraryItem(libraryItem, localUrl: localDirectory, server: Store.serverConfig!, files: files, coverPath: coverFile)
-                    try? Database.shared.saveLocalLibraryItem(localLibraryItem: localLibraryItem!)
+                    realm.delete(savedDownload.downloadItemParts)
+                    realm.delete(savedDownload)
                 }
-                
-                statusNotification["localLibraryItem"] = try? localLibraryItem.asDictionary()
-                
-                if let progress = libraryItem.userMediaProgress {
-                    let episode = downloadItem.media?.episodes.first(where: { $0.id == downloadItem.episodeId })
-                    let localMediaProgress = LocalMediaProgress(localLibraryItem: localLibraryItem!, episode: episode, progress: progress)
-                    try? localMediaProgress.save()
-                    statusNotification["localMediaProgress"] = try? localMediaProgress.asDictionary()
+                var notification: [String: Any] = ["libraryItemId": downloadId]
+                if let localItem { notification["localLibraryItem"] = try localItem.asDictionary() }
+                if let progress { notification["localMediaProgress"] = try progress.asDictionary() }
+                self.notifyListeners("onItemDownloadComplete", data: notification)
+            } catch {
+                AbsLogger.error(message: "文件已下载，本地书目保存失败；下载队列已保留", error: error)
+                if let saved = Database.shared.getDownloadItem(downloadItemId: downloadId) {
+                    try? saved.update { saved.downloadItemParts.forEach { $0.lastError = "保存到本机失败，请释放空间后重试" } }
                 }
-                
-                self?.notifyListeners("onItemDownloadComplete", data: statusNotification)
             }
-        } else {
-            self.notifyListeners("onItemDownloadComplete", data: statusNotification)
         }
+        if let snapshot = downloadItem.libraryItemSnapshot, let item = try? JSONDecoder().decode(LibraryItem.self, from: snapshot) { finish(item) }
+        else { ApiClient.getLibraryItemWithProgress(libraryItemId: downloadItem.libraryItemId!, episodeId: downloadItem.episodeId, callback: finish) }
     }
-    
-    
+
+
     // MARK: - Capacitor functions
     
     @objc func downloadLibraryItem(_ call: CAPPluginCall) {
@@ -392,6 +486,7 @@ public class AbsDownloader: CAPPlugin, CAPBridgedPlugin, URLSessionDownloadDeleg
 
         let task = session.downloadTask(with: serverUrl)
         let part = DownloadItemPart(downloadItemId: downloadItemId, filename: filename, destination: localUrl, itemTitle: track.title ?? "Unknown", serverPath: Store.serverConfig!.address, audioTrack: track, episode: episode, ebookFile: nil, size: track.metadata?.size ?? 0)
+        part.uri = serverUrl.absoluteString
 
         // Store the id on the task so the download item can be pulled from the database later
         task.taskDescription = part.id

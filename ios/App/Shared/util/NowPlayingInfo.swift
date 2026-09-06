@@ -62,6 +62,7 @@ class NowPlayingInfo {
         }
     }
     public func update(duration: Double, currentTime: Double, rate: Float, defaultRate: Float, chapterName: String? = nil, chapterNumber: Int? = nil, chapterCount: Int? = nil) {
+        PersonalPlayback.update(position: currentTime, duration: duration, chapter: chapterName)
         // Update on the main to prevent access collisions
         DispatchQueue.main.async { [weak self] in
             if let self = self {

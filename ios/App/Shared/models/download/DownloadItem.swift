@@ -19,6 +19,7 @@ class DownloadItem: Object, Codable {
     @Persisted var mediaType: String?
     @Persisted var itemTitle: String?
     @Persisted var media: MediaType?
+    @Persisted var libraryItemSnapshot: Data?
     @Persisted var downloadItemParts = List<DownloadItemPart>()
     
     private enum CodingKeys : String, CodingKey {
@@ -73,6 +74,7 @@ extension DownloadItem {
         self.mediaType = libraryItem.mediaType
         self.itemTitle = libraryItem.media?.metadata?.title
         self.media = libraryItem.media
+        self.libraryItemSnapshot = try? JSONEncoder().encode(libraryItem)
         
         if let episodeId = episodeId {
             self.id! += "-\(episodeId)"
@@ -85,7 +87,7 @@ extension DownloadItem {
     }
     
     func didDownloadSuccessfully() -> Bool {
-        self.downloadItemParts.allSatisfy({ $0.failed == false })
+        !self.downloadItemParts.isEmpty && self.downloadItemParts.allSatisfy({ $0.failed == false && $0.completed && $0.moved })
     }
     
     func delete() throws {

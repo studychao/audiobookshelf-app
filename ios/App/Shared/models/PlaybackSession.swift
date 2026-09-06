@@ -32,6 +32,7 @@ class PlaybackSession: Object, Codable, Deletable {
     @Persisted var serverAddress: String?
     @Persisted var isActiveSession = true
     @Persisted var serverUpdatedAt: Double = 0
+    @Persisted var serverAttemptedAt: Double = 0
     
     var isLocal: Bool { self.localLibraryItem != nil }
     var mediaPlayer: String { "AVPlayer" }

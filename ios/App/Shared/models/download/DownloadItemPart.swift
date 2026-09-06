@@ -25,9 +25,12 @@ class DownloadItemPart: Object, Codable {
     @Persisted var destinationUri: String?
     @Persisted var progress: Double = 0
     @Persisted var bytesDownloaded: Double = 0
+    @Persisted var resumeData: Data?
+    @Persisted var retryCount: Int = 0
+    @Persisted var lastError: String = ""
     
     private enum CodingKeys : String, CodingKey {
-        case id, downloadItemId, filename, fileSize, itemTitle, completed, moved, failed, progress, bytesDownloaded
+        case id, downloadItemId, filename, fileSize, itemTitle, completed, moved, failed, progress, bytesDownloaded, lastError
     }
     
     override init() {
@@ -46,6 +49,7 @@ class DownloadItemPart: Object, Codable {
         failed = try values.decode(Bool.self, forKey: .failed)
         progress = try values.decode(Double.self, forKey: .progress)
         bytesDownloaded = try values.decode(Double.self, forKey: .bytesDownloaded)
+        lastError = (try? values.decode(String.self, forKey: .lastError)) ?? ""
     }
     
     func encode(to encoder: Encoder) throws {
@@ -60,6 +64,7 @@ class DownloadItemPart: Object, Codable {
         try container.encode(failed, forKey: .failed)
         try container.encode(progress, forKey: .progress)
         try container.encode(bytesDownloaded, forKey: .bytesDownloaded)
+        try container.encode(lastError, forKey: .lastError)
     }
 }
 

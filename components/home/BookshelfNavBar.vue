@@ -124,6 +124,8 @@ export default {
         })
       }
 
+      if (!this.isPodcast && this.userIsAdminOrUp) items.push({ to: '/import', routeName: 'import', iconPack: 'material-symbols', icon: 'add', text: '添加' })
+
       return items
     },
     routeName() {

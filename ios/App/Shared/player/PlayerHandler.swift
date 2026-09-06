@@ -13,6 +13,7 @@ class PlayerHandler {
     
     public static func startPlayback(sessionId: String, playWhenReady: Bool, playbackRate: Float) {
         guard let session = Database.shared.getPlaybackSession(id: sessionId) else { return }
+        PersonalPlayback.remember(session: session)
         
         // Clean up the existing player
         resetPlayer()

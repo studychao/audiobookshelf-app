@@ -15,6 +15,30 @@ class PlayerProgress {
     private static var TIME_BETWEEN_SESSION_SYNC_IN_SECONDS = 15.0
     
     private init() {}
+    private let syncLock = NSLock()
+    private var syncing = Set<String>()
+    private var forcedSyncs = Set<String>()
+
+    private func beginSync(_ id: String, force: Bool) -> Bool {
+        syncLock.lock(); defer { syncLock.unlock() }
+        let inserted = syncing.insert(id).inserted
+        if !inserted && force { forcedSyncs.insert(id) }
+        return inserted
+    }
+    private func endSync(_ id: String) -> Bool {
+        syncLock.lock(); defer { syncLock.unlock() }
+        syncing.remove(id)
+        return forcedSyncs.remove(id) != nil
+    }
+    private func publish(_ state: String) {
+        UserDefaults.standard.set(state, forKey: "personal.syncState")
+        NotificationCenter.default.post(name: Notification.Name("personal.progressSync"), object: nil, userInfo: ["state": state])
+    }
+
+    public func retryPending() async {
+        do { try await updateAllServerSessionFromLocalSession() }
+        catch { publish("pending"); AbsLogger.error(message: "进度等待同步", error: error) }
+    }
     
     
     // MARK: - SYNC HOOKS
@@ -80,18 +104,29 @@ class PlayerProgress {
     }
     
     private func updateAllServerSessionFromLocalSession() async throws {
-        try await withThrowingTaskGroup(of: Void.self) { [self] group in
-            for session in try Realm(queue: nil).objects(PlaybackSession.self).where({ $0.serverConnectionConfigId == Store.serverConfig?.id }) {
-                let session = session.freeze()
-                group.addTask {
-                    try await self.updateServerSessionFromLocalSession(session)
-                }
-            }
-            try await group.waitForAll()
+        let sessions = try Realm(queue: nil).objects(PlaybackSession.self).where({ $0.serverConnectionConfigId == Store.serverConfig?.id }).sorted(byKeyPath: "updatedAt").map { $0.freeze() }
+        for session in sessions where (session.updatedAt ?? 0) > session.serverUpdatedAt {
+            try await updateServerSessionFromLocalSession(session)
         }
     }
     
     private func updateServerSessionFromLocalSession(_ session: PlaybackSession, rateLimitSync: Bool = false) async throws {
+        guard session.serverConnectionConfigId == Store.serverConfig?.id, beginSync(session.id, force: !rateLimitSync) else { return }
+        let syncId = session.id
+        var followUp = false
+        defer {
+            let forced = endSync(syncId)
+            if followUp || forced {
+                Task {
+                    do {
+                        let realm = try Realm(queue: nil)
+                        if let pending = realm.object(ofType: PlaybackSession.self, forPrimaryKey: syncId)?.freeze() {
+                            try await self.updateServerSessionFromLocalSession(pending)
+                        }
+                    } catch { self.publish("pending"); AbsLogger.error(message: "后续进度同步失败", error: error) }
+                }
+            }
+        }
         if ProcessInfo.processInfo.isLowPowerModeEnabled == true {
             PlayerProgress.TIME_BETWEEN_SESSION_SYNC_IN_SECONDS = 60.0
         } else {
@@ -110,19 +145,27 @@ class PlayerProgress {
             
             // If required, rate limit requests based on session last update
             if rateLimitSync {
-                let timeSinceLastSync = nowInMilliseconds - lastUpdateInMilliseconds
                 let timeBetweenSessionSync = PlayerProgress.TIME_BETWEEN_SESSION_SYNC_IN_SECONDS * 1000
-                safeToSync = timeSinceLastSync > timeBetweenSessionSync
+                safeToSync = ProgressSyncPolicy.shouldSend(now: nowInMilliseconds, acknowledgedAt: lastUpdateInMilliseconds, attemptedAt: session.serverAttemptedAt, interval: timeBetweenSessionSync, force: false)
                 if !safeToSync {
                     return // This only exits the update block
                 }
             }
             
-            session.serverUpdatedAt = nowInMilliseconds
+            session.serverAttemptedAt = nowInMilliseconds
         }
         session = session.freeze()
         
         guard safeToSync else { return }
+        if !session.isActiveSession, let itemId = session.libraryItemId,
+           let remote = await ApiClient.getMediaProgress(libraryItemId: itemId, episodeId: session.episodeId),
+           ProgressSyncPolicy.hasNewerRemote(localUpdatedAt: session.updatedAt ?? 0, remoteUpdatedAt: remote.lastUpdate, localPosition: session.currentTime, remotePosition: remote.currentTime) {
+            publish("conflict")
+            return
+        }
+        publish("syncing")
+        let acknowledgedThrough = session.updatedAt ?? Date().timeIntervalSince1970 * 1000
+        let reportedListening = session.timeListening
         AbsLogger.info(message:"Sending sessionId(\(session.id)) to server with currentTime(\(session.currentTime))")
         
         var success = false
@@ -135,19 +178,25 @@ class PlayerProgress {
             if success {
                 if let session = session.thaw() {
                     try session.update {
-                        session.timeListening = 0
+                        session.timeListening = ProgressSyncPolicy.remainingListening(current: session.timeListening, reported: reportedListening)
                     }
                 }
             }
         }
         
         
-        // Remove old sessions after they synced with the server
-        if success && !session.isActiveSession {
-            if let session = session.thaw() {
-                try session.delete()
+        var hasPending = !success
+        if success, let liveSession = session.thaw(), let realm = liveSession.realm {
+            try realm.write {
+                liveSession.serverUpdatedAt = acknowledgedThrough
+                hasPending = (liveSession.updatedAt ?? 0) > acknowledgedThrough
+                followUp = hasPending && !liveSession.isActiveSession
+                if ProgressSyncPolicy.canDiscard(isActive: liveSession.isActiveSession, updatedAt: liveSession.updatedAt ?? 0, acknowledgedThrough: acknowledgedThrough) {
+                    realm.delete(liveSession)
+                }
             }
         }
+        publish(hasPending ? "pending" : "synced")
     }
     
     // TODO: Unused for now

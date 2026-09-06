@@ -12,6 +12,7 @@ import Network
 
 @objc(AbsAudioPlayer)
 public class AbsAudioPlayer: CAPPlugin, CAPBridgedPlugin {
+    static weak var instance: AbsAudioPlayer?
     public var identifier = "AbsAudioPlayerPlugin"
     public var jsName = "AbsAudioPlayer"
     public let pluginMethods: [CAPPluginMethod] = [
@@ -39,6 +40,7 @@ public class AbsAudioPlayer: CAPPlugin, CAPBridgedPlugin {
     private let queue = DispatchQueue.global(qos: .background)
 
     override public func load() {
+        Self.instance = self
         NotificationCenter.default.addObserver(self, selector: #selector(sendMetadata), name: NSNotification.Name(PlayerEvents.update.rawValue), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sendPlaybackClosedEvent), name: NSNotification.Name(PlayerEvents.closed.rawValue), object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(sendMetadata), name: UIApplication.didBecomeActiveNotification, object: nil)
@@ -313,6 +315,7 @@ public class AbsAudioPlayer: CAPPlugin, CAPBridgedPlugin {
             guard let self = self else { return }
 
             let isUnmetered = !path.isExpensive && !path.isConstrained
+            if path.status == .satisfied { Task { await PlayerProgress.shared.retryPending() } }
 
             DispatchQueue.main.async {
                 self.notifyNetworkMeteredChanged(isUnmetered: isUnmetered)

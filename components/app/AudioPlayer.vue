@@ -22,7 +22,7 @@
       </div>
 
       <!-- Playback method indicator (Direct/Local/Transcode) -->
-      <p class="top-4 absolute left-0 right-0 mx-auto text-center uppercase tracking-widest text-opacity-75 z-50" :class="{ 'text-black text-opacity-75': coverBgIsLight && theme !== 'black' }" style="font-size: 10px">{{ isDirectPlayMethod ? $strings.LabelPlaybackDirect : isLocalPlayMethod ? $strings.LabelPlaybackLocal : $strings.LabelPlaybackTranscode }}</p>
+      <button v-if="$platform === 'ios'" class="absolute left-0 right-0 mx-auto text-center z-50" :class="{ 'text-black': coverBgIsLight && theme !== 'black' }" style="top: 24px; font-size: 12px; max-width: 210px; min-height: 32px" @click.stop="retryPersonalSync">{{ personalSyncLabel }}</button>
     </div>
 
     <!-- Overall book progress bar -->
@@ -63,21 +63,15 @@
 
     <div id="playerContent" class="playerContainer w-full z-20 absolute bottom-0 left-0 right-0 p-2 pointer-events-auto transition-all" :style="{ backgroundColor: showFullscreen ? '' : coverRgb }" @click="clickContainer">
       <!-- Top controls bar - fullscreen only: bookmarks, speed, sleep timer, chapters -->
-      <div v-if="showFullscreen" class="absolute bottom-4 left-0 right-0 w-full pb-4 pt-2 mx-auto px-6" style="max-width: 414px">
+      <div v-if="showFullscreen" class="absolute bottom-2 left-0 right-0 w-full pb-2 mx-auto px-6" style="max-width: 414px">
         <div class="flex items-center justify-between pointer-events-auto">
-          <span v-if="!isPodcast && serverLibraryItemId && socketConnected" class="material-symbols text-3xl text-fg-muted cursor-pointer" :class="{ fill: bookmarks.length }" @click="$emit('showBookmarks')">bookmark</span>
+          <button v-if="!isPodcast && serverLibraryItemId && socketConnected" class="personal-player-action" @click.stop="$emit('showBookmarks')" aria-label="书签"><span class="material-symbols text-2xl" :class="{ fill: bookmarks.length }">bookmark</span><small>书签</small></button>
           <!-- hidden for podcasts but still using this as a placeholder -->
           <span v-else class="material-symbols text-3xl text-white text-opacity-0">bookmark</span>
 
-          <span class="font-mono text-fg-muted cursor-pointer" style="font-size: 1.35rem" @click="$emit('selectPlaybackSpeed')">{{ currentPlaybackRate }}x</span>
-          <svg v-if="!sleepTimerRunning" xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-fg-muted cursor-pointer" fill="none" viewBox="0 0 24 24" stroke="currentColor" @click.stop="$emit('showSleepTimer')">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-          <div v-else class="h-7 w-7 flex items-center justify-around cursor-pointer" @click.stop="$emit('showSleepTimer')">
-            <p class="text-xl font-mono text-success">{{ sleepTimeRemainingPretty }}</p>
-          </div>
-
-          <span class="material-symbols text-3xl text-fg cursor-pointer" :class="chapters.length ? 'text-opacity-75' : 'text-opacity-10'" @click="clickChaptersBtn">format_list_bulleted</span>
+          <button class="personal-player-action" @click.stop="$emit('selectPlaybackSpeed')" aria-label="调整倍速"><span class="text-xl">{{ currentPlaybackRate }}×</span><small>倍速</small></button>
+          <button class="personal-player-action" @click.stop="$emit('showSleepTimer')" aria-label="定时关闭"><span v-if="sleepTimerRunning" class="text-success">{{ sleepTimeRemainingPretty }}</span><span v-else class="material-symbols text-2xl">bedtime</span><small>定时</small></button>
+          <button class="personal-player-action" :disabled="!chapters.length" @click.stop="clickChaptersBtn" aria-label="章节列表"><span class="material-symbols text-2xl">format_list_bulleted</span><small>章节</small></button>
         </div>
       </div>
       <div v-else class="w-full h-full absolute top-0 left-0 pointer-events-none" style="background: var(--gradient-minimized-audio-player)" />
@@ -136,6 +130,7 @@ import { Dialog } from '@capacitor/dialog'
 import { getAverageColorFromCoverUrl } from '@/utils/coverAverageColor'
 import WrappingMarquee from '@/assets/WrappingMarquee.js'
 import jumpLabelMixin from '@/mixins/jumpLabel'
+import { AbsPersonal } from '@/plugins/personal.client'
 
 export default {
   props: {
@@ -203,6 +198,7 @@ export default {
     }
   },
   computed: {
+    personalSyncLabel() { return { synced: '进度已同步', syncing: '正在同步进度', pending: '已在本机保存 · 等待同步', conflict: '其他设备有更新进度 · 点击查看' }[this.$store.state.personal.syncState] || '进度已在本机保存' },
     theme() {
       return document.documentElement.dataset.theme || 'dark'
     },
@@ -985,6 +981,11 @@ export default {
     showProgressSyncIsFailing() {
       this.syncStatus = this.$constants.SyncStatus.FAILED
     },
+    async retryPersonalSync() {
+      if (this.$store.state.personal.syncState === 'conflict') {
+        await Dialog.alert({ title: '有来自其他设备的新进度', message: '已保留本机记录，没有用旧记录覆盖服务器。回到书架重新打开这本书，可以查看书库同步后的进度。' })
+      } else { await AbsPersonal.retrySync() }
+    },
     showProgressSyncSuccess() {
       this.syncStatus = this.$constants.SyncStatus.SUCCESS
     }
@@ -1236,4 +1237,7 @@ export default {
 .fullscreen #playerControls .play-btn .material-symbols {
   font-size: 2.1rem;
 }
+</style>
+<style scoped>
+.personal-player-action{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;min-width:52px;min-height:52px;color:var(--color-fg-muted,inherit)}.personal-player-action small{font-size:10px;opacity:.8}.personal-player-action:focus-visible{outline:2px solid currentColor;outline-offset:3px;border-radius:6px}.personal-player-action:disabled{opacity:.35}
 </style>
