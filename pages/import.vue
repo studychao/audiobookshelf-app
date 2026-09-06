@@ -1,8 +1,8 @@
 <template>
   <div class="personal-import">
     <div class="import-toolbar"><button @click="$router.push('/bookshelf')" aria-label="返回书架">‹ 书架</button><span>添加与整理</span></div>
-    <iframe v-if="url" ref="importer" :src="url" title="添加有声书与整理书库" allow="clipboard-write" @load="sendCredentials" />
-    <div v-else class="p-6"><p>先连接书库，就可以上传你的有声书。</p><nuxt-link to="/connect" class="text-success">连接书库</nuxt-link></div>
+    <iframe v-if="url" ref="importer" :src="url" title="添加书籍与整理书库" allow="clipboard-write" @load="sendCredentials" />
+    <div v-else class="p-6"><p>先连接书库，就可以上传你的音频和电子书。</p><nuxt-link to="/connect" class="text-success">连接书库</nuxt-link></div>
     <p v-if="error" role="alert" class="import-error">{{ error }}</p>
   </div>
 </template>

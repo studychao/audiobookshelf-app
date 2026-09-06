@@ -1,10 +1,10 @@
 # Personal iOS build
 
-This fork retains the upstream Audiobookshelf client and GPL-3.0 license. Bundle ID: `com.chaowu.audiobookshelf`. Personal build: **0.14.0 (44)**. Host minimum iOS 15; App Shortcuts need iOS 16; the widget needs iOS 17.
+This fork retains the upstream Audiobookshelf client and GPL-3.0 license. Bundle ID: `com.chaowu.audiobookshelf`. Personal build: **0.14.1 (45)**. Host minimum iOS 15; App Shortcuts need iOS 16; the widget needs iOS 17.
 
 ## Features
 
-The core app adds an import/organization page, a continue-listening home section, readable player controls and sync status, persistent download recovery, response/file-size validation, bounded retries, and acknowledged progress syncing with stale-session conflict protection. Native Files “Open in” and file selection work in the core build. The import companion must be deployed at the selected server's `/personal/` route.
+The core app adds an import/organization page, a continue-listening home section, readable player controls and sync status, persistent download recovery, response/file-size validation, bounded retries, and acknowledged progress syncing with stale-session conflict protection. Native Files “Open in” and file selection work in the core build for audio and EPUB/PDF/MOBI/AZW3/CBZ/CBR ebooks. Ebook-only imports and combined audio/ebook books are supported; choose the default reading version when importing several versions. The import companion must be deployed at the selected server's `/personal/` route.
 
 The full build also embeds:
 

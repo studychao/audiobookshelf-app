@@ -42,6 +42,7 @@
 		504EC30F1FED79650016851F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
 		504EC3121FED79650016851F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		50B271D11FEDC1A000F3C39B /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
+		50F90192CB9C50D396C9BCA8 /* AudiobookshelfShare.appex in Embed Personal Extensions */ = {isa = PBXBuildFile; fileRef = 05015C64E69829C67E42AEC8 /* AudiobookshelfShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		65643F4DAA661FB0B247247E /* Pods_Audiobookshelf.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8F9A7CCC479333E44DC314BE /* Pods_Audiobookshelf.framework */; };
 		6F2516272E68DA3000F40541 /* LogEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F2516262E68DA3000F40541 /* LogEntry.swift */; };
 		6FCB3EADB4D182A51EA0B24B /* ListeningShortcuts.swift in Sources */ = {isa = PBXBuildFile; fileRef = FE92B53C0C7BE4FCD0FEA9B9 /* ListeningShortcuts.swift */; };
@@ -49,7 +50,7 @@
 		B2640472537A5D4DEE1E4D6B /* AbsPersonal.swift in Sources */ = {isa = PBXBuildFile; fileRef = E76BDFDCB84780215AB3754A /* AbsPersonal.swift */; };
 		B36D357471AA2F4F144DAAB2 /* ContinueListeningWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = CA46C33CC5F45DD6E4CC7407 /* ContinueListeningWidget.swift */; };
 		BE41578EBB5EFACAD329097D /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50DA0C9545260F2E22B6C0D3 /* CarPlaySceneDelegate.swift */; };
-		CEBE70DC4E601133C34AE722 /* AudiobookshelfWidget.appex in Embed Personal Extensions */ = {isa = PBXBuildFile; fileRef = CA462C5CDAA171F34A82EF9F /* AudiobookshelfWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		CDC33C4E9F9B199E9C878184 /* AudiobookshelfWidget.appex in Embed Personal Extensions */ = {isa = PBXBuildFile; fileRef = CA462C5CDAA171F34A82EF9F /* AudiobookshelfWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		DC8657CA2E626B9D3222BEAE /* PersonalReliabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4B5246F4E05C21EB63400E9F /* PersonalReliabilityTests.swift */; };
 		E1E29F77432B8238C96AE1DD /* PersonalShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = 21A4A09ECF54B60D1253D10D /* PersonalShared.swift */; };
 		E9D5504628AC1A3900C746DD /* LibraryItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9D5504528AC1A3900C746DD /* LibraryItem.swift */; };
@@ -83,19 +84,18 @@
 		EACB38122BCCA1330060DA4A /* AudioPlayerRateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB38112BCCA1330060DA4A /* AudioPlayerRateManager.swift */; };
 		EACB38142BCCA1410060DA4A /* LegacyAudioPlayerRateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB38132BCCA1410060DA4A /* LegacyAudioPlayerRateManager.swift */; };
 		EACB38162BCCA1500060DA4A /* DefaultedAudioPlayerRateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB38152BCCA1500060DA4A /* DefaultedAudioPlayerRateManager.swift */; };
-		EB21E5CCB0C3B6AC09E16082 /* AudiobookshelfShare.appex in Embed Personal Extensions */ = {isa = PBXBuildFile; fileRef = 05015C64E69829C67E42AEC8 /* AudiobookshelfShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EC95B28BA1434DBA80A3458D /* Pods_AudiobookshelfUnitTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 2B875F05E45C3BA2E7B9BF63 /* Pods_AudiobookshelfUnitTests.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		AC1EEBF7D5E48F8A3BC7F190 /* PBXContainerItemProxy */ = {
+		1AC74FE63E5C18E4C680ED94 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 04E3EC42AD89E2F0B9010B98;
 			remoteInfo = AudiobookshelfShare;
 		};
-		D0E3E3780A8F374F87AE909B /* PBXContainerItemProxy */ = {
+		6C17850FAAEBD3374B64C73C /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 504EC2FC1FED79650016851F /* Project object */;
 			proxyType = 1;
@@ -118,8 +118,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				EB21E5CCB0C3B6AC09E16082 /* AudiobookshelfShare.appex in Embed Personal Extensions */,
-				CEBE70DC4E601133C34AE722 /* AudiobookshelfWidget.appex in Embed Personal Extensions */,
+				50F90192CB9C50D396C9BCA8 /* AudiobookshelfShare.appex in Embed Personal Extensions */,
+				CDC33C4E9F9B199E9C878184 /* AudiobookshelfWidget.appex in Embed Personal Extensions */,
 			);
 			name = "Embed Personal Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -541,8 +541,8 @@
 			buildRules = (
 			);
 			dependencies = (
-				2F8747A06F50679A422B0828 /* PBXTargetDependency */,
-				552546DA59483DA6E50FF2E9 /* PBXTargetDependency */,
+				406CBE80CC1EAE9E2483C562 /* PBXTargetDependency */,
+				448168A7FD423EF3205648F8 /* PBXTargetDependency */,
 			);
 			name = Audiobookshelf;
 			productName = App;
@@ -812,17 +812,17 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		2F8747A06F50679A422B0828 /* PBXTargetDependency */ = {
+		406CBE80CC1EAE9E2483C562 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = AudiobookshelfShare;
 			target = 04E3EC42AD89E2F0B9010B98 /* AudiobookshelfShare */;
-			targetProxy = AC1EEBF7D5E48F8A3BC7F190 /* PBXContainerItemProxy */;
+			targetProxy = 1AC74FE63E5C18E4C680ED94 /* PBXContainerItemProxy */;
 		};
-		552546DA59483DA6E50FF2E9 /* PBXTargetDependency */ = {
+		448168A7FD423EF3205648F8 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			name = AudiobookshelfWidget;
 			target = 021895D9EDB725401C3A4849 /* AudiobookshelfWidget */;
-			targetProxy = D0E3E3780A8F374F87AE909B /* PBXContainerItemProxy */;
+			targetProxy = 6C17850FAAEBD3374B64C73C /* PBXContainerItemProxy */;
 		};
 		E9E8813F28DA5DE500D750C1 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -858,12 +858,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = "Personal/AudiobookshelfWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf.widget;
 				PRODUCT_MODULE_NAME = AudiobookshelfWidget;
 				PRODUCT_NAME = AudiobookshelfWidget;
@@ -995,12 +995,12 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				OTHER_SWIFT_FLAGS = "$(inherited) \"-D\" \"COCOAPODS\" \"-DDEBUG\"";
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -1020,12 +1020,12 @@
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				INFOPLIST_FILE = App/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
@@ -1042,12 +1042,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = "Personal/AudiobookshelfShare-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf.share;
 				PRODUCT_MODULE_NAME = AudiobookshelfShare;
 				PRODUCT_NAME = AudiobookshelfShare;
@@ -1066,12 +1066,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = "Personal/AudiobookshelfWidget-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf.widget;
 				PRODUCT_MODULE_NAME = AudiobookshelfWidget;
 				PRODUCT_NAME = AudiobookshelfWidget;
@@ -1135,12 +1135,12 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = Personal/Personal.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 44;
+				CURRENT_PROJECT_VERSION = 45;
 				DEVELOPMENT_TEAM = 3F6GUF4Q64;
 				ENABLE_DEBUG_DYLIB = NO;
 				INFOPLIST_FILE = "Personal/AudiobookshelfShare-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				MARKETING_VERSION = 0.14.0;
+				MARKETING_VERSION = 0.14.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.chaowu.audiobookshelf.share;
 				PRODUCT_MODULE_NAME = AudiobookshelfShare;
 				PRODUCT_NAME = AudiobookshelfShare;

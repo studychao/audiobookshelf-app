@@ -68,7 +68,11 @@ schemes = info['CFBundleURLTypes'].first['CFBundleURLSchemes']
 schemes << 'chaoaudiobook' unless schemes.include?('chaoaudiobook')
 info['LSSupportsOpeningDocumentsInPlace'] = true
 info['PersonalAppGroupsEnabled'] = !core
-info['CFBundleDocumentTypes'] = [{ 'CFBundleTypeName' => '有声书音频', 'LSHandlerRank' => 'Alternate', 'LSItemContentTypes' => ['public.audio'] }]
+ebook_types = { 'epub' => ['org.idpf.epub-container', 'application/epub+zip'], 'mobi' => ['com.chaowu.audiobookshelf.mobi', 'application/x-mobipocket-ebook'], 'azw3' => ['com.chaowu.audiobookshelf.azw3', 'application/vnd.amazon.mobi8-ebook'], 'cbz' => ['com.chaowu.audiobookshelf.cbz', 'application/vnd.comicbook+zip'], 'cbr' => ['com.chaowu.audiobookshelf.cbr', 'application/vnd.comicbook-rar'] }
+info['CFBundleDocumentTypes'] = [{ 'CFBundleTypeName' => '音频与电子书', 'LSHandlerRank' => 'Alternate', 'LSItemContentTypes' => ['public.audio', 'com.adobe.pdf'] + ebook_types.values.map(&:first) }]
+info['UTImportedTypeDeclarations'] = ebook_types.map do |extension, (identifier, mime)|
+  { 'UTTypeIdentifier' => identifier, 'UTTypeDescription' => "#{extension.upcase} 电子书", 'UTTypeConformsTo' => ['public.data'], 'UTTypeTagSpecification' => { 'public.filename-extension' => [extension], 'public.mime-type' => [mime] } }
+end
 if carplay
   info['UIApplicationSceneManifest'] = {
     'UIApplicationSupportsMultipleScenes' => false,

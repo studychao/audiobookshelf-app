@@ -10,12 +10,18 @@
 	<array>
 		<dict>
 			<key>CFBundleTypeName</key>
-			<string>有声书音频</string>
+			<string>音频与电子书</string>
 			<key>LSHandlerRank</key>
 			<string>Alternate</string>
 			<key>LSItemContentTypes</key>
 			<array>
 				<string>public.audio</string>
+				<string>com.adobe.pdf</string>
+				<string>org.idpf.epub-container</string>
+				<string>com.chaowu.audiobookshelf.mobi</string>
+				<string>com.chaowu.audiobookshelf.azw3</string>
+				<string>com.chaowu.audiobookshelf.cbz</string>
+				<string>com.chaowu.audiobookshelf.cbr</string>
 			</array>
 		</dict>
 	</array>
@@ -89,5 +95,113 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>EPUB 电子书</string>
+			<key>UTTypeIdentifier</key>
+			<string>org.idpf.epub-container</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>epub</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/epub+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>MOBI 电子书</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.chaowu.audiobookshelf.mobi</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>mobi</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/x-mobipocket-ebook</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>AZW3 电子书</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.chaowu.audiobookshelf.azw3</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>azw3</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.amazon.mobi8-ebook</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>CBZ 电子书</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.chaowu.audiobookshelf.cbz</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cbz</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.comicbook+zip</string>
+				</array>
+			</dict>
+		</dict>
+		<dict>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeDescription</key>
+			<string>CBR 电子书</string>
+			<key>UTTypeIdentifier</key>
+			<string>com.chaowu.audiobookshelf.cbr</string>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>cbr</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>application/vnd.comicbook-rar</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

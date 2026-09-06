@@ -12,7 +12,7 @@ struct ContinueListeningIntent: AppIntent {
 }
 @available(iOS 16.0, *)
 struct AddAudiobookIntent: AppIntent {
-    static var title: LocalizedStringResource = "添加有声书"
+    static var title: LocalizedStringResource = "添加书籍"
     static var openAppWhenRun: Bool = true
     func perform() async throws -> some IntentResult { PersonalShared.defaults.set("import", forKey: "pendingAction"); return .result() }
 }
@@ -20,6 +20,6 @@ struct AddAudiobookIntent: AppIntent {
 struct ListeningShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(intent: ContinueListeningIntent(), phrases: ["在 \(.applicationName) 继续听书", "Continue listening in \(.applicationName)"], shortTitle: "继续听书", systemImageName: "headphones")
-        AppShortcut(intent: AddAudiobookIntent(), phrases: ["在 \(.applicationName) 添加有声书"], shortTitle: "添加有声书", systemImageName: "plus")
+        AppShortcut(intent: AddAudiobookIntent(), phrases: ["在 \(.applicationName) 添加书籍"], shortTitle: "添加书籍", systemImageName: "plus")
     }
 }

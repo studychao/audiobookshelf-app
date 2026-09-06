@@ -1,6 +1,7 @@
 import Foundation
 
 enum PersonalShared {
+    static let ebookExtensions: Set<String> = ["epub", "pdf", "mobi", "azw3", "cbz", "cbr"]
     static let group = "group.com.chaowu.audiobookshelf"
     static var groupsEnabled: Bool { Bundle.main.object(forInfoDictionaryKey: "PersonalAppGroupsEnabled") as? Bool ?? true }
     static var defaults: UserDefaults { groupsEnabled ? (UserDefaults(suiteName: group) ?? .standard) : .standard }
@@ -18,7 +19,7 @@ enum PersonalShared {
         let access = source.startAccessingSecurityScopedResource()
         defer { if access { source.stopAccessingSecurityScopedResource() } }
         guard (try source.resourceValues(forKeys: [.isRegularFileKey])).isRegularFile == true else {
-            throw NSError(domain: "PersonalImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "请分享音频文件，文件夹请在导入页选择"])
+            throw NSError(domain: "PersonalImport", code: 2, userInfo: [NSLocalizedDescriptionKey: "请分享音频或电子书文件，文件夹请在导入页选择"])
         }
         let id = UUID().uuidString
         let folder = try directory().appendingPathComponent(id, isDirectory: true)

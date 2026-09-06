@@ -6,7 +6,7 @@ class ShareViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .systemBackground
-        status.text = "正在接收音频…"; status.numberOfLines = 0; status.textAlignment = .center
+        status.text = "正在接收书籍文件…"; status.numberOfLines = 0; status.textAlignment = .center
         status.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(status)
         NSLayoutConstraint.activate([status.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 28), status.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -28), status.centerYAnchor.constraint(equalTo: view.centerYAnchor)])
@@ -19,7 +19,7 @@ class ShareViewController: UIViewController {
         for provider in providers {
             let mediaIdentifier = provider.registeredTypeIdentifiers.first(where: { identifier in
                 guard let type = UTType(identifier) else { return false }
-                return type.conforms(to: .audio) || type.conforms(to: .image)
+                return type.conforms(to: .audio) || type.conforms(to: .image) || PersonalShared.ebookExtensions.contains(type.preferredFilenameExtension?.lowercased() ?? "")
             })
             guard let identifier = mediaIdentifier ?? (provider.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) ? UTType.fileURL.identifier : nil) else { continue }
             group.enter()
@@ -40,7 +40,7 @@ class ShareViewController: UIViewController {
             } else { provider.loadFileRepresentation(forTypeIdentifier: identifier, completionHandler: receive) }
         }
         group.notify(queue: .main) {
-            self.status.text = count > 0 ? "已接收 \(count) 个文件。\n打开 Audiobookshelf，在「添加」中确认书名并上传。" : "没有收到可用的音频文件。"
+            self.status.text = count > 0 ? "已接收 \(count) 个文件。\n打开 Audiobookshelf，在「添加」中确认书名并上传。" : "没有收到可用的音频或电子书文件。"
             if !failures.isEmpty { self.status.text! += "\n" + failures.joined(separator: "\n") }
             let done = UIButton(type: .system); done.setTitle("完成", for: .normal); done.titleLabel?.font = .preferredFont(forTextStyle: .headline); done.translatesAutoresizingMaskIntoConstraints = false
             done.addTarget(self, action: #selector(self.finish), for: .touchUpInside); self.view.addSubview(done)
